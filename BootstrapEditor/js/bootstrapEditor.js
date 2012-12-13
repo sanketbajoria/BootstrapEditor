@@ -61,7 +61,8 @@
                 row = $('#row',tableModal);
                 column = $('#column',tableModal);
                 row.val("");
-                column.val("");              
+                column.val("");
+                tableModal.modal('show');              
             }
             
             
