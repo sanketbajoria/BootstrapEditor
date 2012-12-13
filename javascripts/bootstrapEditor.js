@@ -61,7 +61,8 @@
                 row = $('#row',tableModal);
                 column = $('#column',tableModal);
                 row.val("");
-                column.val("");              
+                column.val("");
+                tableModal.modal('show');              
             }
             
             
@@ -366,7 +367,7 @@
         
           var updateBootstrapToolbar = function(elem)
           {
-            	selectableItems	= selectableItems || bootstrapEditorToolbar.getToolbar().find("div > ul > li:not(.divider,.divider-vertical,.dropdown)");
+              	selectableItems	= selectableItems || bootstrapEditorToolbar.getToolbar().find("div > ul > li:not(.divider,.divider-vertical,.dropdown)");
           		$.each(selectableItems, function(){
           		var menuNode = $(this);
           		var actionKey = menuNode.attr("actionKey");
