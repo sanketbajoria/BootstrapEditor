@@ -260,6 +260,7 @@
                 htmlStr += '</div></div>';
                 bootstrapModalMap[id] = $(htmlStr).on("click","button.btn-primary",function(e){
                    bootstrapModalMap[id].modal('hide');
+                   bootstrapEditorFrame.focus();
                    callback(); 
                 }).on("show shown",function(){
                     hasFocus = true;
