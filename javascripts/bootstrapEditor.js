@@ -538,13 +538,12 @@
             $(frame[0].contentWindow).on("focus",function(){
                 hasFocus = true;
                 checkFocusBlurState();
-            }).on("blur",function(){
+            }).on("beforedeactivate blur",function(){
                hasFocus = false;
+               instance.savedRange = instance.getRange();
                checkFocusBlurState();
             });
-            $(instance.frameDoc).on("beforedeactivate blur", function () {
-                    instance.savedRange = instance.getRange();
-            });
+            
                
                
             }
