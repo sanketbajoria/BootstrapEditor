@@ -41,13 +41,13 @@
                 var tableModal = getBootstrapModal("bootstrapTableModal",null,body,button, function(){
                                    row = row || $('#row',tableModal);
                                    column = column || $('#column',tableModal);
-                                   if(parseInt(row.val().trim())<=0 || parseInt(column.val().trim())<=0)
+                                   if(parseInt(row.val())<=0 || parseInt(column.val())<=0)
                                         return;
                                    var tableStr = "<table id='test' cellspacing=0 cellpadding=0 border=1 style='border-color: #ccc'>";
-                                   for(var i=0;i<parseInt(row.val().trim());i++)
+                                   for(var i=0;i<parseInt(row.val());i++)
                                    {
                                        tableStr += "<tr>";
-                                       for(var j=0;j<parseInt(column.val().trim());j++)
+                                       for(var j=0;j<parseInt(column.val());j++)
                                        {
                                            tableStr += "<td>&nbsp;</td>";
                                        }
@@ -181,8 +181,8 @@
                 
                 var imageModal = getBootstrapModal("bootstrapImageModal",null,body,button,function (){
                                    imageUrl = imageUrl || $('#imageUrl',imageModal);
-                                   if(imageUrl.val().trim() === "") return;
-                                   bootstrapEditorFrame.frameDoc.execCommand("insertImage", false, imageUrl.val().trim());
+                                   if(imageUrl.val() === "") return;
+                                   bootstrapEditorFrame.frameDoc.execCommand("insertImage", false, imageUrl.val());
                  
                 });
                 imageUrl = $('#imageUrl',imageModal);
@@ -203,10 +203,10 @@
                                    var valid = true;
                                    address = address || $('#address',linkModal);
                                    text = text || $('#text',linkModal);
-                                   if(address.val().trim() === "" || text.val().trim() === "") return;
-                                   var textNode = bootstrapEditorFrame.frameDoc.createTextNode(text.val().trim())
+                                   if(address.val() === "" || text.val() === "") return;
+                                   var textNode = bootstrapEditorFrame.frameDoc.createTextNode(text.val())
                                    bootstrapEditorFrame.replaceText(textNode);
-                                   bootstrapEditorFrame.frameDoc.execCommand("createLink", false, address.val().trim());
+                                   bootstrapEditorFrame.frameDoc.execCommand("createLink", false, address.val());
                  
                                 });
                 address = $('#address',linkModal);
