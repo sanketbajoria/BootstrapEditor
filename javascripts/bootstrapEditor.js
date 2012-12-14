@@ -41,8 +41,6 @@
                 var tableModal = getBootstrapModal("bootstrapTableModal",null,body,button, function(){
                                    row = row || $('#row',tableModal);
                                    column = column || $('#column',tableModal);
-                                   tableModal.modal('hide');
-                                   bootstrapEditorFrame.focus();
                                    if(parseInt(row.val().trim())<=0 || parseInt(column.val().trim())<=0)
                                         return;
                                    var tableStr = "<table id='test' cellspacing=0 cellpadding=0 border=1 style='border-color: #ccc'>";
@@ -156,8 +154,6 @@
                 var htmlSource = null;
                 var htmlModal = getBootstrapModal("bootstrapHtmlModal",null,body,button,function (){
                                    htmlSource = htmlSource || $('#htmlSource',htmlModal);
-                                   htmlModal.modal('hide');
-                                   bootstrapEditorFrame.focus();
                                    var content = "";
                                    var tokens = $("<div>" + htmlSource.val() + "</div>").contents().each(function(){
                                         if(this.nodeType === 3){
@@ -169,6 +165,7 @@
                 });
                 htmlSource = $('#htmlSource',htmlModal);
                 setTimeout(function(){
+                    			    checkAndSetFrameBodyContent(false);
                                     htmlSource.val(bootstrapEditorFrame.frameDoc.body.innerHTML);
                                     htmlModal.modal('show');
                                     },200);
@@ -184,8 +181,6 @@
                 
                 var imageModal = getBootstrapModal("bootstrapImageModal",null,body,button,function (){
                                    imageUrl = imageUrl || $('#imageUrl',imageModal);
-                                   imageModal.modal('hide');
-                                   bootstrapEditorFrame.focus();
                                    if(imageUrl.val().trim() === "") return;
                                    bootstrapEditorFrame.frameDoc.execCommand("insertImage", false, imageUrl.val().trim());
                  
@@ -208,8 +203,6 @@
                                    var valid = true;
                                    address = address || $('#address',linkModal);
                                    text = text || $('#text',linkModal);
-                                   linkModal.modal('hide');
-                                   bootstrapEditorFrame.focus();
                                    if(address.val().trim() === "" || text.val().trim() === "") return;
                                    var textNode = bootstrapEditorFrame.frameDoc.createTextNode(text.val().trim())
                                    bootstrapEditorFrame.replaceText(textNode);
@@ -219,6 +212,7 @@
                 address = $('#address',linkModal);
                 text = $('#text',linkModal);
                 address.val("http://");
+                checkAndSetFrameBodyContent(false);
                 text.val(bootstrapEditorFrame.getText());              
                 linkModal.modal('show');
             }        
@@ -265,10 +259,14 @@
                 }
                 htmlStr += '</div></div>';
                 bootstrapModalMap[id] = $(htmlStr).on("click","button.btn-primary",function(e){
+                   bootstrapModalMap[id].modal('hide');
                    callback(); 
-                }).on("shown",function(){
+                }).on("show shown",function(){
                     hasFocus = true;
                     $("textarea:first,input:first",bootstrapModalMap[id]).focus();
+                }).on("hide hidden",function(){
+                    hasFocus = true;
+                    bootstrapEditorFrame.focus();
                 });   
                 return bootstrapModalMap[id];
             }
@@ -367,7 +365,7 @@
         
           var updateBootstrapToolbar = function(elem)
           {
-            	selectableItems	= selectableItems || bootstrapEditorToolbar.getToolbar().find("div > ul > li:not(.divider,.divider-vertical,.dropdown)");
+          		selectableItems	= selectableItems || bootstrapEditorToolbar.getToolbar().find("div > ul > li:not(.divider,.divider-vertical,.dropdown)");
           		$.each(selectableItems, function(){
           		var menuNode = $(this);
           		var actionKey = menuNode.attr("actionKey");
@@ -490,7 +488,7 @@
             }
             this.checkFrameBodyEmpty = function(){
                 var tokens = $(instance.frameDoc.body).children("*:not(#content-placeholder)");
-                return tokens.length==0 || (tokens.length==1 && $(tokens[0]).find("ol,ul,li,hr,img").length == 0 && !($(tokens[0]).text()));
+                return tokens.length==0 || (tokens.length==1 && $(tokens[0]).find("ol,ul,li,hr,img,table,img,a").length == 0 && !($(tokens[0]).text()));
             }
             
             this.setFrameBodyContent = function(placeholderContent){
@@ -697,21 +695,20 @@
                             elem.append(this.getToolbar());
                             this.getToolbar().on("click","li:not(.divider,.divider-vertical,.dropdown)",function(event){
                                 var actionKey = $(this).attr("actionKey");
-                                checkFocusBlurState();
+                                hasFocus = true;
                                 this.blur();
                                 bootstrapEditorFrame.focus();
-                                
                                 executeAction(actionKey);
                                 return true;
                             });
                             
-                            this.getToolbar().on("focus",function(){
+                            /*this.getToolbar().on("focus blur",function(){
                                                               hasFocus = true;
-                                                        })
+                                                              bootstrapEditorFrame.focus();
+                                                        });
                             this.getToolbar().on("blur",function(){
-                                                              hasFocus = false;
-                                                              checkFocusBlurState();
-                                                        })
+                                                              updateBootstrapToolbar(null);
+                                                        })*/
                         }                          
                         
                      }
@@ -719,28 +716,23 @@
     var hasFocus = false;
     var lastFocus = false;
     
-    var checkFocusBlurState = function()
-    {
+    var checkAndSetFrameBodyContent = function(empty){
+    if(bootstrapEditorFrame.checkFrameBodyEmpty())
+                                   bootstrapEditorFrame.setFrameBodyContent(empty);              
+               
+    }
+    
+    var checkFocusBlurState = function(){
         setTimeout(function(){
             if(lastFocus != hasFocus){
-            if(hasFocus){
-               bootstrapEditor.addClass('onfocus');
-               if(bootstrapEditorFrame.checkFrameBodyEmpty())
-                                   bootstrapEditorFrame.setFrameBodyContent(false);              
-                
-            }
-            else{
-               bootstrapEditor.removeClass('onfocus');
-               if(bootstrapEditorFrame.checkFrameBodyEmpty())
-                                   bootstrapEditorFrame.setFrameBodyContent(true);
-            }
+            bootstrapEditor.toggleClass('onfocus',hasFocus);
+            checkAndSetFrameBodyContent(!hasFocus)
             lastFocus = hasFocus;
             }
             
-        },100);
+        },200);
     }
-  	this.init = function(elem)
-  	{
+  	this.init = function(elem){
   	    var width = elem.width() || 640;
   	    var height = elem.height() || 340;
   	    
