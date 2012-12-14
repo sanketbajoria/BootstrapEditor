@@ -267,7 +267,6 @@
                     $("textarea:first,input:first",bootstrapModalMap[id]).focus();
                 }).on("hide hidden",function(){
                     hasFocus = true;
-                    bootstrapEditorFrame.focus();
                 });   
                 return bootstrapModalMap[id];
             }
@@ -535,13 +534,15 @@
                });
                
                
-            $(frame[0].contentWindow).on("focus",function(){
+             $(frame[0].contentWindow).on("focus",function(){
                 hasFocus = true;
                 checkFocusBlurState();
-            }).on("beforedeactivate blur",function(){
+            }).on("blur",function(){
                hasFocus = false;
-               instance.savedRange = instance.getRange();
                checkFocusBlurState();
+            });
+            $(instance.frameDoc).on("beforedeactivate blur", function () {
+                    instance.savedRange = instance.getRange();
             });
             
                
