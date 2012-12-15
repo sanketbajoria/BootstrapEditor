@@ -22,7 +22,6 @@
     "use strict";
     function BootstrapEditor()
     {
-            
             var actionMap = {};
             var bootstrapEditor = null;
             var bootstrapEditorToolbar = null;
@@ -33,37 +32,6 @@
     
             var table = {};
     
-            table.insertTable = function(){
-                
-                var body = '<form><fieldset><label>No. of rows</label><input type="text" id="row" placeholder="rows"><label>No. of columns</label>' +
-                            '<input type="text" id="column" placeholder="columns"></fieldset></form>';
-                var button = 'Insert', row = null, column = null;
-                var tableModal = getBootstrapModal("bootstrapTableModal",null,body,button, function(){
-                                   row = row || $('#row',tableModal);
-                                   column = column || $('#column',tableModal);
-                                   if(parseInt(row.val().trim())<=0 || parseInt(column.val().trim())<=0)
-                                        return;
-                                   var tableStr = "<table id='test' cellspacing=0 cellpadding=0 border=1 style='border-color: #ccc'>";
-                                   for(var i=0;i<parseInt(row.val().trim());i++)
-                                   {
-                                       tableStr += "<tr>";
-                                       for(var j=0;j<parseInt(column.val().trim());j++)
-                                       {
-                                           tableStr += "<td>&nbsp;</td>";
-                                       }
-                                       tableStr += "</tr>";
-                                   }
-                                   tableStr += "</table>";
-                                   bootstrapEditorFrame.insertNode(tableStr);
-                                });
-                row = $('#row',tableModal);
-                column = $('#column',tableModal);
-                row.val("");
-                column.val("");
-                tableModal.modal('show');              
-            }
-            
-            
             table.deleteTable = function(){
                var tableProp = table.getTableProp();
                if(tableProp && tableProp.node){
@@ -147,7 +115,35 @@
             table.insertColRight = function(){
                 table.insertCol(true);
             }
-            
+			
+			table.insertTable = function(){
+                
+                var body = '<form><fieldset><label>No. of rows</label><input type="text" id="row" placeholder="rows"><label>No. of columns</label>' +
+                            '<input type="text" id="column" placeholder="columns"></fieldset></form>';
+                var button = 'Insert', row = null, column = null;
+                var tableModal = getBootstrapModal("bootstrapTableModal",null,body,button, function(){
+                                   row = row || $('#row',tableModal);
+                                   column = column || $('#column',tableModal);
+                                   if(parseInt($.trim(row.val()))<=0 || parseInt($.trim(column.val()))<=0)return;
+                                   var tableStr = "<table id='test' cellspacing=0 cellpadding=0 border=1 style='border-color: #ccc'>";
+                                   for(var i=0;i<parseInt($.trim(row.val()));i++)
+                                   {
+                                       tableStr += "<tr>";
+                                       for(var j=0;j<parseInt($.trim(column.val()));j++)
+                                       {
+                                           tableStr += "<td>&nbsp;</td>";
+                                       }
+                                       tableStr += "</tr>";
+                                   }
+                                   tableStr += "</table>";
+                                   bootstrapEditorFrame.insertNode(tableStr);
+                                });
+                row = $('#row',tableModal);
+                column = $('#column',tableModal);
+                row.val("");
+                column.val("");
+                tableModal.modal('show');              
+            }            
             var viewHtml = function(){
                 var body = '<form><fieldset><label>HTML Source Editor</label><textarea id="htmlSource" rows="15" style="width:100%"></textarea></fieldset></form>';
                 var button = 'Update';
@@ -165,7 +161,6 @@
                 });
                 htmlSource = $('#htmlSource',htmlModal);
                 setTimeout(function(){
-                				    checkAndSetFrameBodyContent(false);
                                     htmlSource.val(bootstrapEditorFrame.frameDoc.body.innerHTML);
                                     htmlModal.modal('show');
                                     },200);
@@ -181,8 +176,8 @@
                 
                 var imageModal = getBootstrapModal("bootstrapImageModal",null,body,button,function (){
                                    imageUrl = imageUrl || $('#imageUrl',imageModal);
-                                   if(imageUrl.val().trim() === "") return;
-                                   bootstrapEditorFrame.frameDoc.execCommand("insertImage", false, imageUrl.val().trim());
+                                   if($.trim(imageUrl.val()) === "") return;
+                                   bootstrapEditorFrame.frameDoc.execCommand("insertImage", false, $.trim(imageUrl.val()));
                  
                 });
                 imageUrl = $('#imageUrl',imageModal);
@@ -203,16 +198,15 @@
                                    var valid = true;
                                    address = address || $('#address',linkModal);
                                    text = text || $('#text',linkModal);
-                                   if(address.val().trim() === "" || text.val().trim() === "") return;
-                                   var textNode = bootstrapEditorFrame.frameDoc.createTextNode(text.val().trim())
+                                   if($.trim(address.val()) === "" || $.trim(text.val()) === "") return;
+                                   var textNode = bootstrapEditorFrame.frameDoc.createTextNode($.trim(text.val()))
                                    bootstrapEditorFrame.replaceText(textNode);
-                                   bootstrapEditorFrame.frameDoc.execCommand("createLink", false, address.val().trim());
+                                   bootstrapEditorFrame.frameDoc.execCommand("createLink", false, $.trim(address.val()));
                  
                                 });
                 address = $('#address',linkModal);
                 text = $('#text',linkModal);
                 address.val("http://");
-                checkAndSetFrameBodyContent(false);
                 text.val(bootstrapEditorFrame.getText());              
                 linkModal.modal('show');
             }        
@@ -258,15 +252,17 @@
                 htmlStr += '<button class="btn btn-primary">'+button+'</button>';
                 }
                 htmlStr += '</div></div>';
-                bootstrapModalMap[id] = $(htmlStr).on("click","button.btn-primary",function(e){
+                bootstrapModalMap[id] = $(htmlStr).on("click","button",function(e){
                    bootstrapModalMap[id].modal('hide');
-                   callback(); 
-                }).on("show shown",function(){
+                   hasFocus = true;
+                   bootstrapEditorFrame.focus();
+                   checkFocusBlurState(true);
+                   if($(this).hasClass('btn-primary')){
+                   			callback(); 
+                   }
+                }).on("shown",function(){
                     hasFocus = true;
                     $("textarea:first,input:first",bootstrapModalMap[id]).focus();
-                }).on("hide hidden",function(){
-                    hasFocus = true;
-                    bootstrapEditorFrame.focus();
                 });   
                 return bootstrapModalMap[id];
             }
@@ -536,10 +532,10 @@
                
             $(frame[0].contentWindow).on("focus",function(){
                 hasFocus = true;
-                checkFocusBlurState();
+                checkFocusBlurState(true);
             }).on("blur",function(){
                hasFocus = false;
-               checkFocusBlurState();
+               checkFocusBlurState(false);
             });
             $(instance.frameDoc).on("beforedeactivate blur", function () {
                     instance.savedRange = instance.getRange();
@@ -698,6 +694,7 @@
                                 hasFocus = true;
                                 this.blur();
                                 bootstrapEditorFrame.focus();
+                                checkFocusBlurState(true);
                                 executeAction(actionKey);
                                 return true;
                             });
@@ -716,21 +713,24 @@
     var hasFocus = false;
     var lastFocus = false;
     
-    var checkAndSetFrameBodyContent = function(empty){
-    if(bootstrapEditorFrame.checkFrameBodyEmpty())
-                                   bootstrapEditorFrame.setFrameBodyContent(empty);              
-               
-    }
     
-    var checkFocusBlurState = function(){
-        setTimeout(function(){
-            if(lastFocus != hasFocus){
+    var changeFocus = function(){
+    		if(lastFocus != hasFocus){
             bootstrapEditor.toggleClass('onfocus',hasFocus);
-            checkAndSetFrameBodyContent(!hasFocus)
+            if(bootstrapEditorFrame.checkFrameBodyEmpty())
+                                   bootstrapEditorFrame.setFrameBodyContent(!hasFocus);              
             lastFocus = hasFocus;
             }
-            
+    }
+    
+    var checkFocusBlurState = function(instant){
+        if(!instant){
+        setTimeout(function(){
+            changeFocus();            
         },200);
+        }else{
+            changeFocus();
+        }
     }
   	this.init = function(elem){
   	    var width = elem.width() || 640;
@@ -743,8 +743,6 @@
   	    bootstrapEditor.width(width);
   	    bootstrapEditor.height(height);
   	    
-  	    //elem.hide().before(bootstrapEditor);
-  	    
   	    bootstrapEditorToolbar = new BootstrapEditorToolbar();
   	    bootstrapEditorToolbar.addToElem(bootstrapEditor);
   	    bootstrapEditorFrame = new BootstrapEditorFrame("<br>",width,height-bootstrapEditorToolbar.getToolbar().height());
@@ -754,10 +752,9 @@
   	        hasFocus = true;
   	        this.blur();
   	        bootstrapEditorFrame.focus();
-  	    });
-  	    bootstrapEditor.on("blur",function(e){
+  	    }).on("blur",function(e){
   	        hasFocus = false;
-            checkFocusBlurState();
+            checkFocusBlurState(false);
         });    
   	}   
   	}    
