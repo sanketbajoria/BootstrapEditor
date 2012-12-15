@@ -2,8 +2,11 @@
  * bootstrap-editor.js v0.1
  * Rich Editor
  * ===================================================
- * Copyright (c) 2012 Sanket Bajoria
- * https://github.com/sanketbajoria/BootstrapEditor
+ * Copyright (c) 2012 
+ * Author - Sanket Bajoria
+ * Email - bajoriasanket@gmail.com
+ * Source - https://github.com/sanketbajoria/BootstrapEditor
+ * Demo - http://sanketbajoria.github.com/BootstrapEditor
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
