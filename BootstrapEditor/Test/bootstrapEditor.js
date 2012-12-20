@@ -32,11 +32,13 @@
             var selectableItems = null;
             var hotkeyMap = {};
             var bootstrapModalMap = {};
-            var popoverMap = {};
+    
+    
+    
     
             var table = {};
     
-            table.deleteTable = function(){
+            table.delTable = function(){
                var tableProp = table.getTableProp();
                if(tableProp && tableProp.node){
                    $(tableProp.node).remove();
@@ -57,7 +59,8 @@
                     colIndex: colIndex
                 }:null;
             }
-            table.insertRow = function(below){
+            table.insRow = function(key){
+               var below = actionMap[key].value;
                var tableProp = table.getTableProp();
                if(tableProp && tableProp.rowIndex>=0){
                var row = tableProp.node.insertRow(below?tableProp.rowIndex+1:tableProp.rowIndex);
@@ -68,11 +71,11 @@
                }
             }
             
-            table.deleteRow = function(){
+            table.delRow = function(){
                var tableProp = table.getTableProp();
                if(tableProp==null) return;
                if(tableProp.rowLen==1){
-                   table.deleteTable();
+                   table.delTable();
                    return;
                }
                if(tableProp.rowIndex>=0 && tableProp.rowIndex<tableProp.rowLen){
@@ -81,12 +84,12 @@
                    bootstrapEditorFrame.selectNode(sibling[tableProp.rowIndex<tableProp.rowLen-1?tableProp.rowIndex:tableProp.rowIndex-1].cells[tableProp.colIndex>=0?tableProp.colIndex:0],true);
                }
             }
-            table.deleteCol = function(){
+            table.delCol = function(){
                var tableProp = table.getTableProp();
                if(tableProp==null) return;
                if(tableProp.colIndex>=0 && tableProp.colIndex<tableProp.colLen){
                    if(tableProp.colLen==1){
-                       table.deleteTable();
+                       table.delTable();
                        return;
                    }
                    var sibling = $(tableProp.node.rows[tableProp.rowIndex].cells[tableProp.colIndex]).siblings("td");
@@ -96,8 +99,8 @@
                   bootstrapEditorFrame.selectNode(sibling[tableProp.colIndex<tableProp.colLen-1?tableProp.colIndex:tableProp.colIndex-1],true);
                }
             }
-            
-            table.insertCol = function(right){
+            table.insCol = function(key){
+               var right = actionMap[key].value;
                var tableProp = table.getTableProp();
                if(tableProp && tableProp.colIndex>=0){
                for(var i=0;i<tableProp.rowLen;i++){
@@ -107,20 +110,7 @@
                }
                
             }
-            table.insertRowBelow = function(){
-                table.insertRow(true);
-            }
-            table.insertRowAbove = function(){
-                table.insertRow(false);
-            }
-            table.insertColLeft = function(){
-                table.insertCol(false);
-            }
-            table.insertColRight = function(){
-                table.insertCol(true);
-            }
-			
-			table.insertTable = function(){
+			table.insTable = function(){
                 
                 var body = '<form class="form-horizontal"><div class="control-group"><label class="control-label">No. of rows</label><div class="controls"><input type="text" id="row" placeholder="rows">' + 
                 			'</div></div><div class="control-group"><label class="control-label">No. of columns</label><div class="controls"><input type="text" id="column" placeholder="columns"></div></div>' +
@@ -153,13 +143,11 @@
             
             colorPicker.colorCodes = {"Standard Color":["000000","FFFFFF","EEECE1","1F497D","4F81BD","C0504D","9BBB59","8064A2","4BACC6","F79646","C00000","FF0000","FFC000","FFFF00",
             						"92D050","00B050","00B0F0","0070C0","002060","7030A0"],"Other Color":[]}; 
-            
-            
-            colorPicker.createColorPicker = function(elem,input,title,callback){
+            colorPicker.createColorPicker = function(elem,input,callback){
             	var items=10;
             	var contentStr = "<div>"
             	if(input){
-            	title = "<label class='colorPickerLabel'>"+title+"</label><div class='colorPickerControl'><div class='colorPickerDisplay colorPicker'></div><input type='text' class='input-small colorPickerValue' /></div>"
+            	contentStr += "<label class='colorPickerLabel'>"+elem.attr('title')+"</label><div class='colorPickerControl'><div class='colorPickerDisplay colorPicker'></div><input type='text' class='input-small colorPickerValue' /></div>"
             	}
             	$.each(colorPicker.colorCodes, function(key, value) { 
 					if(value.length>0)
@@ -176,26 +164,51 @@
 					}
 				});
 				contentStr += "</div>";
-				elem.popover({title:title,html:true,placement:"bottom",content:contentStr,trigger:"manual"});
-				
+				elem.popover({html:true,placement:"bottom",content:contentStr,trigger:"manual"});
+				elem.data('popover').options.template = '<div class="popover"><div class="arrow"></div><div class="popover-inner"><div class="popover-content"></div></div></div>';
 				elem.popover("show");
 				elem.data('popover').tip().on("click","div.colorPickerDisplay",function(){
 				 callback($(this).css("background-color"));
 				});
             }
-            
-            var fontColor = function(elem){
-               var obj = $($(elem).find("a:first")[0]);
+            colorPicker.hex = function(x) {
+					               return ("0" + parseInt(x).toString(16)).slice(-2);
+			}
+            colorPicker.normalizeColor = function(rgb) {
+					     if (  rgb.search("rgb") == -1 ) {
+					          return rgb;
+					     } else {
+					          rgb = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+))?\)$/);
+					          var hex = colorPicker.hex;
+					          return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]); 
+					     }
+			}
+            var changeColor = function(key,elem){
+               var front = actionMap[key].value;
+               var cmd = actionMap[key].command;
+               var obj = $(elem);
                if(!obj.data('popover')){
-	           colorPicker.createColorPicker(obj,true,"Font Color",function(color){
-						            alert(color);
+	           colorPicker.createColorPicker(obj,true,function(color){
 						            obj.popover('hide');
+						            bootstrapEditorFrame.frameDoc.execCommand(cmd, false, color);
 						            });
 						            }
 			    else{
 	            obj.popover(obj.data('popover').tip().is(":hidden")?'show':'hide');
 	            }
+	            var val = colorPicker.normalizeColor(getCommandValue(cmd) || "#000");
+	            var colorPickerDiv = $(".colorPicker",obj.data('popover').tip());
+	            var colorPickerValue = $(".colorPickerValue",obj.data('popover').tip());
+	            colorPickerValue.on("keyup",function(){
+	            	colorPickerDiv.css("background-color",$(this).val());
+	            });
+	            colorPickerDiv.css("background-color",val);
+	            colorPickerValue.val(val);
+	            
             }
+    
+    
+    
                         
             var viewHtml = function(){
                 var body = '<form><fieldset><label>HTML Source Editor</label><textarea id="htmlSource" rows="15" style="width:100%"></textarea></fieldset></form>';
@@ -220,7 +233,7 @@
                 
             }
             
-            var insertImage = function(){
+            var insImg = function(){
                 var body = '<form><fieldset><label>Enter Image URL</label><input type="text" id="imageUrl" placeholder="Image URL"></fieldset></form>';
                     
                 var button = 'Insert';
@@ -264,7 +277,7 @@
             {
                 this.command = context.cmd;
                 this.value = context.val;
-                this.tags = context.tag;
+                this.tag = context.tag;
                 this.css = context.css;
                 this.hotkey = context.hotkey;
                 this.execCmd = context.execCmd;
@@ -344,21 +357,24 @@
                     {
                         actionMap["h"+i] = new Action({cmd:(($.browser.msie||$.browser.webkit)?"FormatBlock":"heading"),val:(($.browser.msie||$.browser.webkit)?"<h"+i+">":"h"+i),tag:["h"+i]});
                     }
-                    actionMap["horizontalLine"] = new Action({cmd:"insertHorizontalRule",tag:["hr"],execCmd:fontColor});
+                    actionMap["horizontalLine"] = new Action({cmd:"insertHorizontalRule",tag:["hr"]});
                     
                     
-                    actionMap["insertImage"] =  new Action({cmd:"insertImage",tag:["img"],execCmd:insertImage});
+                    actionMap["insImg"] =  new Action({cmd:"insertImage",tag:["img"],execCmd:insImg});
                     
-                    actionMap["insertTable"] = new Action({tag:["table"],execCmd:table.insertTable});
-                    actionMap["insertRowBelow"] = new Action({execCmd:table.insertRowBelow});
-                    actionMap["insertRowAbove"] = new Action({execCmd:table.insertRowAbove});
-                    actionMap["insertColLeft"] = new Action({execCmd:table.insertColLeft});
-                    actionMap["insertColRight"] = new Action({execCmd:table.insertColRight});
-                    actionMap["deleteRow"] = new Action({execCmd:table.deleteRow});
-                    actionMap["deleteCol"] = new Action({execCmd:table.deleteCol});
-                    actionMap["deleteTable"] = new Action({execCmd:table.deleteTable});
+                    actionMap["insTable"] = new Action({tag:["table"],execCmd:table.insTable});
+                    actionMap["insRowB"] = new Action({val:true,execCmd:table.insRow});
+                    actionMap["insRowA"] = new Action({val:false,execCmd:table.insRow});
+                    actionMap["insColL"] = new Action({val:false,execCmd:table.insCol});
+                    actionMap["insColR"] = new Action({val:true,execCmd:table.insCol});
+                    actionMap["delRow"] = new Action({execCmd:table.delRow});
+                    actionMap["delCol"] = new Action({execCmd:table.delCol});
+                    actionMap["delTable"] = new Action({execCmd:table.delTable});
                     
                     actionMap["viewHtml"] = new Action({execCmd:viewHtml});
+                    
+                    actionMap["foreColor"] = new Action({cmd:"foreColor",val:true,execCmd:changeColor});
+                    actionMap["backColor"] = new Action({cmd:"backColor",val:false,execCmd:changeColor});
                     
                     $.each(actionMap,function(name,val){
                         if(!val.hotkey)return;
@@ -386,17 +402,21 @@
                                     }
                                 }
                             }
-                            
                             hotkeyMap[hotkey] = name;    
                         }
-                        
                     });
                 };
-
+		   var getCommandValue = function(cmd){
+		   			var d = bootstrapEditorFrame.frameDoc;
+		   			if(cmd && d.queryCommandValue && d.queryCommandValue(cmd)){
+		   				return d.queryCommandValue(cmd)
+		   			}
+		   			return false;
+		   }
            var executeAction = function (actionKey,arg) {
                     var action = actionMap[actionKey];
                     if (action.execCmd) {
-                        action.execCmd.apply(this,arg);
+                        action.execCmd.apply(this,[actionKey,arg]);
                     } else {
                     try {
                         bootstrapEditorFrame.frameDoc.execCommand(action.command, false, action.value);
@@ -436,7 +456,6 @@
                     } else if (instance.frameDoc.body && 'contentEditable' in instance.frameDoc.body) {
                         instance.frameDoc.body.contentEditable = true;
                     }
-                    
             }
             this.getSelection = function () {
                      return frame[0].contentWindow.getSelection?frame[0].contentWindow.getSelection() : (instance.frameDoc?instance.frameDoc.selection:null);
@@ -654,18 +673,21 @@
 
                             addMenuNode(i++,menu,new MenuNode("icon-minus",8,"Insert Horizontal Line",true,null,"horizontalLine",null));
                             
-                            addMenuNode(i++,menu,new MenuNode("icon-picture",8,"Insert Image",true,null,"insertImage",null));
+                            addMenuNode(i++,menu,new MenuNode("icon-picture",8,"Insert Image",true,null,"insImg",null));
                             
-                            addMenuNode(i++,menu,new MenuNode("icon-table",8,"Table",true,null,"insertTable",new Array()));
+                            addMenuNode(i++,menu,new MenuNode("icon-table",8,"Table",true,null,null,new Array()));
                              j=0;
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,10,"Insert Table",true,null,"insertTable",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Row Above",true,null,"insertRowAbove",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Row Below",true,null,"insertRowBelow",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Column Right",true,null,"insertColRight",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Column Left",true,null,"insertColLeft",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,12,"Delete Row",true,null,"deleteRow",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,12,"Delete Column",true,null,"deleteCol",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,12,"Delete Table",true,null,"deleteTable",null));
+                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,10,"Insert Table",true,null,"insTable",null));
+                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Row Above",true,null,"insRowA",null));
+                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Row Below",true,null,"insRowB",null));
+                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Column Right",true,null,"insColR",null));
+                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Column Left",true,null,"insColL",null));
+                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,12,"Delete Row",true,null,"delRow",null));
+                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,12,"Delete Column",true,null,"delCol",null));
+                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,12,"Delete Table",true,null,"delTable",null));
+                            
+                            addMenuNode(i++,menu,new MenuNode("icon-twitter",8,"Fore Color",true,null,"foreColor"));
+                            addMenuNode(i++,menu,new MenuNode("icon-twitter-sign",8,"Back Color",true,null,"backColor"));
                         }
                         var toolbarHtml = function(){
                             initMenu();
