@@ -58,3 +58,44 @@ border-top-style: solid;
 border-top-width: 1px;
 box-shadow: rgba(0, 0, 0, 0.0745098) 0px 1px 1px 0px inset;
 }
+
+.bootstrapEditor .navbar .divider-vertical {
+    margin: 0px 4px;
+}
+
+.bootstrapEditor .colorPickerDisplay {
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    width:12px;
+    height:12px;
+    margin: 1px 2px;
+} 
+
+.bootstrapEditor .colorPickerDisplay:hover {
+    border: 2px solid orange;
+    margin: 0px 1px;
+} 
+
+.bootstrapEditor .colorPicker {
+    float:left;
+    margin:0px;
+    position:absolute;
+    top:7px;
+    right:3px;
+}
+
+.bootstrapEditor .colorPickerLabel {
+    float: left;
+    padding-top: 5px;
+}
+
+.bootstrapEditor .colorPickerControl {
+    display:inline-block;
+    position:relative;
+    margin-left: 8px;
+}
+
+.bootstrapEditor .colorPickerValue {
+    margin: 0px;
+}
+

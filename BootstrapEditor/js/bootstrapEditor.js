@@ -35,7 +35,7 @@
     
             var table = {};
     
-            table.deleteTable = function(){
+            table.delTable = function(){
                var tableProp = table.getTableProp();
                if(tableProp && tableProp.node){
                    $(tableProp.node).remove();
@@ -56,7 +56,8 @@
                     colIndex: colIndex
                 }:null;
             }
-            table.insertRow = function(below){
+            table.insRow = function(key){
+               var below = actionMap[key].value;
                var tableProp = table.getTableProp();
                if(tableProp && tableProp.rowIndex>=0){
                var row = tableProp.node.insertRow(below?tableProp.rowIndex+1:tableProp.rowIndex);
@@ -67,11 +68,11 @@
                }
             }
             
-            table.deleteRow = function(){
+            table.delRow = function(){
                var tableProp = table.getTableProp();
                if(tableProp==null) return;
                if(tableProp.rowLen==1){
-                   table.deleteTable();
+                   table.delTable();
                    return;
                }
                if(tableProp.rowIndex>=0 && tableProp.rowIndex<tableProp.rowLen){
@@ -80,12 +81,12 @@
                    bootstrapEditorFrame.selectNode(sibling[tableProp.rowIndex<tableProp.rowLen-1?tableProp.rowIndex:tableProp.rowIndex-1].cells[tableProp.colIndex>=0?tableProp.colIndex:0],true);
                }
             }
-            table.deleteCol = function(){
+            table.delCol = function(){
                var tableProp = table.getTableProp();
                if(tableProp==null) return;
                if(tableProp.colIndex>=0 && tableProp.colIndex<tableProp.colLen){
                    if(tableProp.colLen==1){
-                       table.deleteTable();
+                       table.delTable();
                        return;
                    }
                    var sibling = $(tableProp.node.rows[tableProp.rowIndex].cells[tableProp.colIndex]).siblings("td");
@@ -95,8 +96,8 @@
                   bootstrapEditorFrame.selectNode(sibling[tableProp.colIndex<tableProp.colLen-1?tableProp.colIndex:tableProp.colIndex-1],true);
                }
             }
-            
-            table.insertCol = function(right){
+            table.insCol = function(key){
+               var right = actionMap[key].value;
                var tableProp = table.getTableProp();
                if(tableProp && tableProp.colIndex>=0){
                for(var i=0;i<tableProp.rowLen;i++){
@@ -106,29 +107,17 @@
                }
                
             }
-            table.insertRowBelow = function(){
-                table.insertRow(true);
-            }
-            table.insertRowAbove = function(){
-                table.insertRow(false);
-            }
-            table.insertColLeft = function(){
-                table.insertCol(false);
-            }
-            table.insertColRight = function(){
-                table.insertCol(true);
-            }
-			
-			table.insertTable = function(){
+			table.insTable = function(){
                 
-                var body = '<form><fieldset><label>No. of rows</label><input type="text" id="row" placeholder="rows"><label>No. of columns</label>' +
-                            '<input type="text" id="column" placeholder="columns"></fieldset></form>';
+                var body = '<form class="form-horizontal"><div class="control-group"><label class="control-label">No. of rows</label><div class="controls"><input type="text" id="row" placeholder="rows">' + 
+                			'</div></div><div class="control-group"><label class="control-label">No. of columns</label><div class="controls"><input type="text" id="column" placeholder="columns"></div></div>' +
+                			'<label class="control-label">Border</label><div class="controls"><input type="text" id="border" placeholder="columns"></div></form>';
                 var button = 'Insert', row = null, column = null;
                 var tableModal = getBootstrapModal("bootstrapTableModal",null,body,button, function(){
                                    row = row || $('#row',tableModal);
                                    column = column || $('#column',tableModal);
                                    if(parseInt($.trim(row.val()))<=0 || parseInt($.trim(column.val()))<=0)return;
-                                   var tableStr = "<table id='test' cellspacing=0 cellpadding=0 border=1 style='border-color: #ccc'>";
+                                   var tableStr = "<table cellspacing=0 cellpadding=0 border=1 style='border-color: #ccc'>";
                                    for(var i=0;i<parseInt($.trim(row.val()));i++)
                                    {
                                        tableStr += "<tr>";
@@ -146,7 +135,80 @@
                 row.val("");
                 column.val("");
                 tableModal.modal('show');              
-            }            
+            }
+            var colorPicker = {};
+            
+            colorPicker.colorCodes = {"Standard Color":["000000","FFFFFF","EEECE1","1F497D","4F81BD","C0504D","9BBB59","8064A2","4BACC6","F79646","C00000","FF0000","FFC000","FFFF00",
+            						"92D050","00B050","00B0F0","0070C0","002060","7030A0"],"Other Color":[]}; 
+            colorPicker.createColorPicker = function(elem,title,placement,input,callback){
+            	var items=10;
+            	var contentStr = "<div>"
+            	if(input){
+            	contentStr += "<label class='colorPickerLabel'>"+title+"</label><div class='colorPickerControl'><input type='text' class='input-small colorPickerValue' /><div class='colorPickerDisplay colorPicker'></div></div>"
+            	}
+            	$.each(colorPicker.colorCodes, function(key, value) { 
+					if(value.length>0)
+					{
+						contentStr += "<h4>"+key+"</h4><table>";
+						for(var i=0;i<=((value.length/items) && value.length!=0);i++){
+							contentStr += "<tr>";
+							for(var j=(i*items);j<value.length && j<(i+1)*items;j++){
+								contentStr += "<td><div class='colorPickerDisplay' style='background-color:#"+value[j]+";'></div></td>";
+							}
+							contentStr += "</tr>";
+						}
+						contentStr += "</td></tr></table>"
+					}
+				});
+				contentStr += "</div>";
+				elem.popover({html:true,placement:placement,content:contentStr,trigger:"manual"});
+				elem.popover("show");
+				elem.data('popover').tip().on("click","div.colorPickerDisplay",function(){
+				 callback($(this).css("background-color"));
+				});
+            }
+            colorPicker.hex = function(x) {
+					               return ("0" + parseInt(x).toString(16)).slice(-2);
+			}
+            colorPicker.normalizeColor = function(rgb) {
+            			 if(typeof rgb != 'string') return null;
+					     if (rgb.search("rgb") == -1 ) {
+					          return rgb;
+					     } else {
+					          rgb = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+))?\)$/);
+					          var hex = colorPicker.hex;
+					          return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]); 
+					     }
+			}
+            
+            
+            var changeColor = function(key,elem,e){
+               var fore = actionMap[key].value;
+               var cmd = actionMap[key].command;
+               var obj = $(elem.find("a:first")[0]);
+               var val = colorPicker.normalizeColor(getCommandValue(cmd)) || (fore?"#000":"#fff");
+               if(!obj.data('popover')){
+	           colorPicker.createColorPicker(obj,elem.attr("title"),"right",true,function(color){
+						            obj.popover('hide');
+						            bootstrapEditorFrame.focus();
+						            executeAction.apply(this,[key,elem,e,color]);
+						            });
+                } else{
+	            if(e.type==="click" || e.type==="mouseleave"){
+	              obj.popover("hide");
+	            }else if(e.type="mouseenter"){
+	                obj.popover("show");
+	            	}
+	            }
+	            var colorPickerDiv = $(".colorPicker",obj.data('popover').tip());
+	            var colorPickerValue = $(".colorPickerValue",obj.data('popover').tip());
+	            colorPickerDiv.css("background-color",val);
+	           	colorPickerValue.val(val);
+	            colorPickerValue.on("keyup",function(){
+	            		colorPickerDiv.css("background-color",$(this).val());
+	            });
+            }
+    
             var viewHtml = function(){
                 var body = '<form><fieldset><label>HTML Source Editor</label><textarea id="htmlSource" rows="15" style="width:100%"></textarea></fieldset></form>';
                 var button = 'Update';
@@ -167,36 +229,30 @@
                                     htmlSource.val(bootstrapEditorFrame.frameDoc.body.innerHTML);
                                     htmlModal.modal('show');
                                     },200);
-                
             }
             
-             
-            var insertImage = function(){
+            var insImg = function(key,elem,e){
                 var body = '<form><fieldset><label>Enter Image URL</label><input type="text" id="imageUrl" placeholder="Image URL"></fieldset></form>';
-                    
                 var button = 'Insert';
                 var imageUrl = null;
                 
                 var imageModal = getBootstrapModal("bootstrapImageModal",null,body,button,function (){
                                    imageUrl = imageUrl || $('#imageUrl',imageModal);
                                    if($.trim(imageUrl.val()) === "") return;
-                                   bootstrapEditorFrame.frameDoc.execCommand("insertImage", false, $.trim(imageUrl.val()));
-                 
+                                   executeAction.apply(this,[key,elem,e,$.trim(imageUrl.val())]);
                 });
                 imageUrl = $('#imageUrl',imageModal);
                 imageUrl.val("http://");
                 imageModal.modal('show');
             }
     
-            var createLink = function(){
+            var createLink = function(key,elem,e){
                 var body = '<form><fieldset><label>Address</label><input type="text" id="address" placeholder="URL/Mail"><label>Text to display</label>' +
                             '<input type="text" id="text" placeholder="Text"></fieldset></form>';
                     
                 var button = 'Create';
                 var address = null;
                 var text = null;
-            
-                
                 var linkModal = getBootstrapModal("bootstrapLinkModal",null,body,button, function(){
                                    var valid = true;
                                    address = address || $('#address',linkModal);
@@ -204,8 +260,7 @@
                                    if($.trim(address.val()) === "" || $.trim(text.val()) === "") return;
                                    var textNode = bootstrapEditorFrame.frameDoc.createTextNode($.trim(text.val()))
                                    bootstrapEditorFrame.replaceText(textNode);
-                                   bootstrapEditorFrame.frameDoc.execCommand("createLink", false, $.trim(address.val()));
-                 
+                                   executeAction.apply(this,[key,elem,e,$.trim(address.val())]);
                                 });
                 address = $('#address',linkModal);
                 text = $('#text',linkModal);
@@ -213,25 +268,30 @@
                 text.val(bootstrapEditorFrame.getText());              
                 linkModal.modal('show');
             }        
-            var Action = function(command, value, tags, css, hotkey, execCmd)
+            var Action = function(context)
             {
-                this.command = command;
-                this.value = value;
-                this.tags = tags;
-                this.css = css;
-                this.hotkey = hotkey;
-                this.execCmd = execCmd;
+                this.command = context.cmd;
+                this.value = context.val;
+                this.tag = context.tag;
+                this.css = context.css;
+                this.hotkey = context.hotkey;
+                this.execCmd = context.execCmd;
+                this.disable = context.disable;
             }
-    
-            var MenuNode = function(icon, group, title, visible, wrapContent, action, subMenu)
+            
+            var MenuNode = function(context)
             {
-                this.icon = icon;
-                this.group =group;
-                this.title = title;
-                this.visible = visible;
-                this.wrapContent = wrapContent;
-                this.action = action;
-                this.subMenu = subMenu;
+                this.icon = context.icon;
+                this.group = context.group;
+                this.title = context.title;
+                this.wrapContent = context.wrapContent;
+                this.action = context.action;
+                this.subMenu = context.subMenu;
+                this.trigger = context.trigger;
+            }
+            
+            var setting = function(){
+            	
             }
             
             var getBootstrapModal = function(id,header,body,button,callback)
@@ -273,46 +333,50 @@
             var initActionMap = function(){
                 
                     //F1-F12 a-z, 0-9, ',' , '.' with ctrl shift alt combination
-                    actionMap["bold"] = new Action("bold", null, ["b","strong"],{"font-weight":"800"},["Ctrl-B"],null);
-                    actionMap["italic"] = new Action("italic", null, ["i","em"],{"font-style":"italic"},["Ctrl-I"],null);
-                    actionMap["underline"] = new Action("underline", null, ["u"],{"text-decoration":"underline"},["Ctrl-U"],null);
-                    actionMap["strikeThrough"] = new Action("strikeThrough", null, ["s","strike"],{"text-decoration":"line-through"},["Ctrl-S"],null);
+                    actionMap["bold"] = new Action({tag:["b","strong"],css:{"font-weight":"800"},hotkey:["Ctrl-B"]});
+                    actionMap["italic"] = new Action({tag:["i","em"],css:{"font-style":"italic"},hotkey:["Ctrl-I"]});
+                    actionMap["underline"] = new Action({tag:["u"],css:{"text-decoration":"underline"},hotkey:["Ctrl-U"]});
+                    actionMap["strikeThrough"] = new Action({tag:["s","strike"],css:{"text-decoration":"line-through"},hotkey:["Ctrl-S"]});
                     
-                    actionMap["justifyLeft"] = new Action("justifyLeft", null, null,{"text-align":"left"},["Ctrl-L"],null);
-                    actionMap["justifyRight"] = new Action("justifyRight", null, null,{"text-align":"right"},["Ctrl-R"],null);
-                    actionMap["justifyCenter"] = new Action("justifyCenter", null, null,{"text-align":"center"},["Ctrl-E"],null);
-                    actionMap["justifyFull"] = new Action("justifyFull", null, null,{"text-align":"justify"},["Ctrl-J"],null);
+                    actionMap["justifyLeft"] = new Action({css:{"text-align":"left"},hotkey:["Ctrl-L"]});
+                    actionMap["justifyRight"] = new Action({css:{"text-align":"right"},hotkey:["Ctrl-R"]});
+                    actionMap["justifyCenter"] = new Action({css:{"text-align":"center"},hotkey:["Ctrl-E"]});
+                    actionMap["justifyFull"] = new Action({css:{"text-align":"justify"},hotkey:["Ctrl-J"]});
                     
-                    actionMap["createLink"] = new Action("createLink", null, ["a"], null, ["Ctrl-K"], createLink);
-                    actionMap["unlink"] = new Action("unlink",null,null,null,null,null);
+                    actionMap["createLink"] = new Action({tag:["a"], hotkey:["Ctrl-K"], execCmd:createLink});
+                    actionMap["unlink"] = new Action({});
                     
-                    actionMap["indent"] =  new Action("indent",null,null,null,null,null);
-                    actionMap["outdent"] =  new Action("outdent",null,null,null,null,null);
+                    actionMap["indent"] =  new Action({});
+                    actionMap["outdent"] =  new Action({});
                     
-                    actionMap["insertOrderedList"] =  new Action("insertOrderedList",null,["ol"],null,null,null);
-                    actionMap["insertUnorderedList"] =  new Action("insertUnorderedList",null,["ul"],null,null,null);
+                    actionMap["insertOrderedList"] =  new Action({tag:["ol"]});
+                    actionMap["insertUnorderedList"] =  new Action({tag:["ul"]});
                     
-                    actionMap["paragraph"] =  new Action("FormatBlock",(($.browser.msie||$.browser.webkit)?"<p>":"p"),["p"],null,null,null);
+                    actionMap["paragraph"] =  new Action({cmd:"FormatBlock",val:(($.browser.msie||$.browser.webkit)?"<p>":"p"),tag:["p"]});
                     for(var i=1;i<=6;i++)
                     {
-                        actionMap["h"+i] = new Action((($.browser.msie||$.browser.webkit)?"FormatBlock":"heading"),(($.browser.msie||$.browser.webkit)?"<h"+i+">":"h"+i),["h"+i],null,null,null);
+                        actionMap["h"+i] = new Action({cmd:(($.browser.msie||$.browser.webkit)?"FormatBlock":"heading"),val:(($.browser.msie||$.browser.webkit)?"<h"+i+">":"h"+i),tag:["h"+i]});
                     }
-                    actionMap["horizontalLine"] = new Action("insertHorizontalRule",null,["hr"],null,null,null);
+                    actionMap["insertHorizontalRule"] = new Action({tag:["hr"]});
                     
                     
-                    actionMap["insertImage"] =  new Action("insertImage",null,["img"],null,null,insertImage);
+                    actionMap["insertImage"] =  new Action({tag:["img"],execCmd:insImg});
                     
-                    actionMap["insertTable"] = new Action(null,null,["table"],null,null,table.insertTable);
-                    actionMap["insertRowBelow"] = new Action(null,null,null,null,null,table.insertRowBelow);
-                    actionMap["insertRowAbove"] = new Action(null,null,null,null,null,table.insertRowAbove);
-                    actionMap["insertColLeft"] = new Action(null,null,null,null,null,table.insertColLeft);
-                    actionMap["insertColRight"] = new Action(null,null,null,null,null,table.insertColRight);
-                    actionMap["deleteRow"] = new Action(null,null,null,null,null,table.deleteRow);
-                    actionMap["deleteCol"] = new Action(null,null,null,null,null,table.deleteCol);
-                    actionMap["deleteTable"] = new Action(null,null,null,null,null,table.deleteTable);
+                    actionMap["insTable"] = new Action({tag:["table"],execCmd:table.insTable});
+                    actionMap["insRowB"] = new Action({val:true,execCmd:table.insRow});
+                    actionMap["insRowA"] = new Action({val:false,execCmd:table.insRow});
+                    actionMap["insColL"] = new Action({val:false,execCmd:table.insCol});
+                    actionMap["insColR"] = new Action({val:true,execCmd:table.insCol});
+                    actionMap["delRow"] = new Action({execCmd:table.delRow});
+                    actionMap["delCol"] = new Action({execCmd:table.delCol});
+                    actionMap["delTable"] = new Action({execCmd:table.delTable});
                     
-                    actionMap["viewHtml"] = new Action(null,null,null,null,null,viewHtml);
+                    actionMap["viewHtml"] = new Action({execCmd:viewHtml});
                     
+                    actionMap["foreColor"] = new Action({val:true,execCmd:changeColor});
+                    actionMap["backColor"] = new Action({val:false,execCmd:changeColor});
+                    
+                    actionMap["setting"] = new Action({execCmd:setting});
                     
                     $.each(actionMap,function(name,val){
                         if(!val.hotkey)return;
@@ -340,27 +404,30 @@
                                     }
                                 }
                             }
-                            
                             hotkeyMap[hotkey] = name;    
                         }
-                        
                     });
                 };
-
-           var executeAction = function (actionKey) {
-                    var action = actionMap[actionKey];
-                    if (action.execCmd) {
-                        action.execCmd.apply(this);
+		   var getCommandValue = function(cmd){
+		   		    var d = bootstrapEditorFrame.frameDoc;
+		   			if(cmd && d.queryCommandValue && d.queryCommandValue(cmd)){
+		   				return d.queryCommandValue(cmd)
+		   			}
+		   			return false;
+		   }
+           var executeAction = function (key,elem,e,val) {
+                    var action = actionMap[key];
+                    if (!val && action.execCmd) {
+                        action.execCmd.apply(this,[key,elem,e]);
                     } else {
-                    try {
-                        bootstrapEditorFrame.frameDoc.execCommand(action.command, false, action.value);
-                        } catch (e) {
-                        console.error(e);
-                        }
+                   		try {
+                           bootstrapEditorFrame.frameDoc.execCommand((action.command||key), false, (val||action.value));
+	                      } catch (e) {
+	                        console.error(e);
+	                     }
                     }
                    updateBootstrapToolbar(null);
                 };
-        
         
           var updateBootstrapToolbar = function(elem)
           {
@@ -368,21 +435,17 @@
           		$.each(selectableItems, function(){
           		var menuNode = $(this);
           		var actionKey = menuNode.attr("actionKey");
-          		var cmd = actionMap[actionKey].command;
-          		if(cmd && bootstrapEditorFrame.frameDoc.queryCommandState && bootstrapEditorFrame.frameDoc.queryCommandState(cmd))
-          		{
+          		var cmd = actionMap[actionKey].command || actionKey;
+          		if(cmd && bootstrapEditorFrame.frameDoc.queryCommandState && bootstrapEditorFrame.frameDoc.queryCommandState(cmd)){
           			menuNode.addClass("active");
           		}
-          		else
-          		{
+          		else{
           			menuNode.removeClass("active");
-          		}
-          		});
-          		
+          		}});
           }
           
           var BootstrapEditorFrame = function(initial,frameWidth,frameHeight){
-            var frame = $('<iframe id="bootstrapEditorFrame" frameBorder="0" id="myFrame"></iframe>');
+            var frame = $('<iframe id="bootstrapEditorFrame" frameBorder="0" id="myFrame" style="overflow:hidden"></iframe>');
             var placeholder = $("<p style='color:#ccc' id='content-placeholder'>Type something...</p>");
             var initialContent = $("<p>"+initial+"</p>");
             this.frameDoc = null;
@@ -394,17 +457,10 @@
                     } else if (instance.frameDoc.body && 'contentEditable' in instance.frameDoc.body) {
                         instance.frameDoc.body.contentEditable = true;
                     }
-                    
             }
             this.getSelection = function () {
                      return frame[0].contentWindow.getSelection?frame[0].contentWindow.getSelection() : (instance.frameDoc?instance.frameDoc.selection:null);
             }
-            
-            this.getFrame = function(){
-                return frame;
-            }
-            
-            
             this.getRange = function () {
                 var selection = this.getSelection();
                 if(!selection) 
@@ -417,23 +473,7 @@
                     return null;
                 return selection.createRange?selection.createRange().text:selection.toString();
             }
-            this.selectNode = function(elem,collapse){
-                var range = bootstrapEditorFrame.getRange();
-                if(!range) return;
-                if(range.selectNodeContents){
-                    var selection = bootstrapEditorFrame.getSelection();
-                    range.selectNodeContents (elem);
-                    if(collapse) range.collapse(true)
-                    selection.removeAllRanges (); 
-                    selection.addRange (range);
-                }
-                else{
-                     range.moveToElementText(elem);
-                     if(collapse) range.collapse(true)
-                     range.select ();
-                }
-                
-            }
+            
             this.replaceText = function(elem){
                 var range = this.getRange();
                 if(!range) return;
@@ -454,15 +494,35 @@
                 }
                 
             }
+            this.selectNode = function(elem,collapse){
+                var range = bootstrapEditorFrame.getRange();
+                if(!range) return;
+                if(range.selectNodeContents){
+                    var selection = bootstrapEditorFrame.getSelection();
+                    range.selectNodeContents (elem);
+                    if(collapse) range.collapse(true)
+                    selection.removeAllRanges (); 
+                    selection.addRange (range);
+                }
+                else{
+                     range.moveToElementText(elem);
+                     if(collapse) range.collapse(true)
+                     range.select ();
+                }
+            }
             this.insertNode = function(tableStr){
                 var range = this.getRange();
                 if(!range) return;
                 if(range.insertNode)
                 {
-                    var selection = this.getSelection();
-                    range.deleteContents();
-                    range.insertNode($(tableStr)[0]);
-                    
+                	 range.deleteContents();
+                     var el = document.createElement("div");
+           			 el.innerHTML = tableStr;
+            		 var frag = bootstrapEditorFrame.frameDoc.createDocumentFragment(), node, lastNode;
+			            while ( (node = el.firstChild) ) {
+			                lastNode = frag.appendChild(node);
+			            }
+			         range.insertNode(frag);
                 }
                 else if(range.pasteHTML)
                 {
@@ -470,21 +530,6 @@
                 }
             }
             
-            this.changeSelection = function(elemToSelect){
-                if (frame[0].contentWindow.getSelection) {  
-                var selection = frame[0].contentWindow.getSelection ();
-                var rangeToSelect = this.frameDoc.createRange ();
-                rangeToSelect.selectNodeContents (elemToSelect);
-                selection.removeAllRanges ();
-                selection.addRange (rangeToSelect);
-                } else {
-                if (this.frameDoc.body.createTextRange) {    
-                    var rangeToSelect = this.frameDoc.body.createTextRange ();
-                    rangeToSelect.moveToElementText (elemToSelect);
-                    rangeToSelect.select ();
-                }
-            }
-            }
             this.checkFrameBodyEmpty = function(){
                 var tokens = $(instance.frameDoc.body).children("*:not(#content-placeholder)");
                 return tokens.length==0 || (tokens.length==1 && $(tokens[0]).find("ol,ul,li,hr,img,table,img,a").length == 0 && !($(tokens[0]).text()));
@@ -500,13 +545,12 @@
                  }
             }
             
-            
            var initFrame = function(){
                frame.width(frameWidth);
-               frame.height(frameHeight); 
+               frame.height(frameHeight);
                turnOnEditingMode(); 
                $(instance.frameDoc).on("click keyup",function(e){
-                   updateBootstrapToolbar(e.target ? e.target : e.srcElement);
+                   updateBootstrapToolbar((e.target ? e.target : e.srcElement));
                    return true;
                });
                $(instance.frameDoc).on("keydown",function(e){
@@ -519,12 +563,11 @@
                                 hotkey |= e.altKey?512:0;
                                 hotkey |= e.shiftKey?1024:0;
                                 if(hotkey in hotkeyMap){
-                                executeAction(hotkeyMap[hotkey]);
+                                executeAction.apply(this,[hotkeyMap[hotkey]]);
                                 e.preventDefault();
                                 e.stopPropagation();
                                 }
                             }
-                            
                         }
                         if (e.which == 8 && instance.checkFrameBodyEmpty()) {
                             e.stopPropagation();
@@ -543,9 +586,8 @@
             $(instance.frameDoc).on("beforedeactivate blur", function () {
                     instance.savedRange = instance.getRange();
             });
-               
-               
             }
+
             this.focus = function()
             {
                 frame[0].contentWindow.focus();
@@ -561,12 +603,13 @@
                 }
                 return true;
             }
+
             this.addToElem = function(elem)
             {
                frame[0].src="javascript:void(0)";
                elem.append(frame);
                this.frameDoc = frame[0].contentDocument ? frame[0].contentDocument : (frame[0].contentWindow?frame[0].contentWindow.document:null);         
-               var myContent = '<!DOCTYPE html><html><head><style>p{margin:16px 0px}</style></head><body style="overflow-x:hidden;word-wrap:break-word"><p style="color:#ccc" id="content-placeholder">Type something...</p></body></html>';
+               var myContent = '<!DOCTYPE html><html><head><style>p{margin:16px 0px}</style></head><body style="overflow-x:hidden;word-wrap:break-word;margin:0px;padding: 0px 6px 0px 6px;"><p style="color:#ccc" id="content-placeholder">Type something...</p></body></html>';
                this.frameDoc.open('text/html', 'replace');
                this.frameDoc.write(myContent);
                this.frameDoc.close();
@@ -574,81 +617,83 @@
             }
           }
 
-          
            var BootstrapEditorToolbar = function(){
                         var menu = this.menu = [];
                         var toolbar = null;
                         var instance=this;
-                        var addMenuNode=function(index,arr,menuNode)
-                        {
+                        var addMenuNode=function(index,arr,menuNode){
                             arr[index] = menuNode;
                         }
-                        var appendSeperator = function(vertical)
-                        {
+                        var appendSeperator = function(vertical){
                             var className = "class='" + (vertical?"divider-vertical":"divider") + "'";
                             return "<li "+className+"></li>";
                         }
                             
-                        var appendNode = function(menuNode,hori)
-                        {
+                        var appendNode = function(menuNode,hori){
                             var actionKey = menuNode.action?("actionKey='" + menuNode.action +"' "):"";
+                            var trigger = menuNode.trigger?("trigger='" + menuNode.trigger +"' "):"";
                             var attr = (menuNode.title)?("title='"+ menuNode.title + (menuNode.action && actionMap[menuNode.action].hotkey?" (" + actionMap[menuNode.action].hotkey[0] + ")":"") + "' "):"";
                             var str = hori?('<i class="'+menuNode.icon+'"></i>'):('<i>'+menuNode.title+'</i>');
                             str = menuNode.wrapContent?$(str).wrap("<div>" + menuNode.wrapContent + "</div>").parents().last().html():str;
-                            var ret = "<li " + actionKey + attr +  ">";
+                            var ret = "<li " + actionKey + trigger + attr +  ">";
                             ret += '<a href="#">'+str+'</a>';
                             ret += "</li>";
                             return ret;
                         }
                         var initMenu = function(){
-                            var i,j;
+                            var i,j,subMenu;
                             i=0;
-                            addMenuNode(i++,menu,new MenuNode("icon-external-link",0,"View HTML Source",true,null,"viewHtml",null));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-external-link",group:0,title:"View HTML Source",action:"viewHtml"}));
                             
-                            addMenuNode(i++,menu,new MenuNode("icon-font",1,"Formatting",true,null,null,new Array()));
-                             j=0;
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,2,"Paragraph",true,"<p />","paragraph",null));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-font",group:1,title:"Formatting",subMenu:new Array()}));
+                             j=0;subMenu=menu[i-1].subMenu;
+                             addMenuNode(j++,subMenu,new MenuNode({group:2,title:"Paragraph",wrapContent:"<p />",action:"paragraph"}));
                              while(j<=6){
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,2,"Header "+(j-1),true,"<h"+ (j-1) + " />","h"+(j-1),null));
+                             addMenuNode(j++,subMenu,new MenuNode({group:2,title:"Header "+(j-1),wrapContent:"<h"+ (j-1) + " />",action:"h"+(j-1)}));
                              }
                             
-                            addMenuNode(i++,menu,new MenuNode("icon-bold",3,"Bold",true,null,"bold",null));
-                            addMenuNode(i++,menu,new MenuNode("icon-italic",3,"Italic",true,null,"italic",null));
-                            addMenuNode(i++,menu,new MenuNode("icon-underline",3,"Underline",true,null,"underline",null));
-                            addMenuNode(i++,menu, new MenuNode("icon-strikethrough",3,"StrikeThrough",true,null,"strikeThrough",null));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-bold",group:3,title:"Bold",action:"bold"}));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-italic",group:3,title:"Italic",action:"italic"}));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-underline",group:3,title:"Underline",action:"underline"}));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-strikethrough",group:3,title:"StrikeThrough",action:"strikeThrough"}));
                             
-                            addMenuNode(i++,menu,new MenuNode("icon-tasks",4,"Alignment",true,null,null,new Array()));
-                             j=0;
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode("icon-align-left",5,"Align Text Left",true,null,"justifyLeft",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode("icon-align-right",5,"Align Text Right",true,null,"justifyRight",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode("icon-align-center",5,"Center",true,null,"justifyCenter",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode("icon-align-justify",6,"Justify",true,null,"justifyFull",null));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-tasks",group:4,title:"Alignment",subMenu:new Array()}));
+                             j=0;subMenu=menu[i-1].subMenu;
+                             addMenuNode(j++,subMenu,new MenuNode({icon:"icon-align-left",group:5,title:"Align Text Left",action:"justifyLeft"}));
+                             addMenuNode(j++,subMenu,new MenuNode({icon:"icon-align-right",group:5,title:"Align Text Right",action:"justifyRight"}));
+                             addMenuNode(j++,subMenu,new MenuNode({icon:"icon-align-center",group:5,title:"Center",action:"justifyCenter"}));
+                             addMenuNode(j++,subMenu,new MenuNode({icon:"icon-align-justify",group:6,title:"Justify",action:"justifyFull"}));
                             
-                            addMenuNode(i++,menu,new MenuNode("icon-indent-left",7,"Increase Indent",true,null,"indent",null));
-                            addMenuNode(i++,menu,new MenuNode("icon-indent-right",7,"Decrease Indent",true,null,"outdent",null));
-                            addMenuNode(i++,menu,new MenuNode("icon-list-ul",7,"Bullets",true,null,"insertUnorderedList",null));
-                            addMenuNode(i++,menu,new MenuNode("icon-list-ol",7,"Numbering",true,null,"insertOrderedList",null));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-indent-left",group:7,title:"Increase Indent",action:"indent"}));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-indent-right",group:7,title:"Decrease Indent",action:"outdent"}));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-list-ul",group:7,title:"Bullets",action:"insertUnorderedList"}));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-list-ol",group:7,title:"Numbering",action:"insertOrderedList"}));
                             
                             
-                            addMenuNode(i++,menu,new MenuNode("icon-link",8,"Link",true,null,null,new Array()));
-                             j=0;
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,9,"Link",true,null,"createLink",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,9,"Unlink",true,null,"unlink",null));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-link",group:8,title:"Link",subMenu:new Array()}));
+                             j=0;subMenu=menu[i-1].subMenu;
+                             addMenuNode(j++,subMenu, new MenuNode({group:9,title:"Link",action:"createLink"}));
+                             addMenuNode(j++,subMenu, new MenuNode({group:9,title:"Unlink",action:"unlink"}));
 
-                            addMenuNode(i++,menu,new MenuNode("icon-minus",8,"Insert Horizontal Line",true,null,"horizontalLine",null));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-minus",group:8,title:"Insert Horizontal Line",action:"insertHorizontalRule"}));
                             
-                            addMenuNode(i++,menu,new MenuNode("icon-picture",8,"Insert Image",true,null,"insertImage",null));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-picture",group:8,title:"Insert Image",action:"insertImage"}));
                             
-                            addMenuNode(i++,menu,new MenuNode("icon-table",8,"Table",true,null,"insertTable",new Array()));
-                             j=0;
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,10,"Insert Table",true,null,"insertTable",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Row Above",true,null,"insertRowAbove",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Row Below",true,null,"insertRowBelow",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Column Right",true,null,"insertColRight",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,11,"Add Column Left",true,null,"insertColLeft",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,12,"Delete Row",true,null,"deleteRow",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,12,"Delete Column",true,null,"deleteCol",null));
-                             addMenuNode(j++,menu[i-1].subMenu, new MenuNode(null,12,"Delete Table",true,null,"deleteTable",null));
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-table",group:8,title:"Table",subMenu:new Array()}));
+                             j=0;subMenu=menu[i-1].subMenu;
+                             addMenuNode(j++,subMenu, new MenuNode({group:10,title:"Insert Table",action:"insTable"}));
+                             addMenuNode(j++,subMenu, new MenuNode({group:11,title:"Add Row Above",action:"insRowA"}));
+                             addMenuNode(j++,subMenu, new MenuNode({group:11,title:"Add Row Below",action:"insRowB"}));
+                             addMenuNode(j++,subMenu, new MenuNode({group:11,title:"Add Column Right",action:"insColR"}));
+                             addMenuNode(j++,subMenu, new MenuNode({group:11,title:"Add Column Left",action:"insColL"}));
+                             addMenuNode(j++,subMenu, new MenuNode({group:12,title:"Delete Row",action:"delRow"}));
+                             addMenuNode(j++,subMenu, new MenuNode({group:12,title:"Delete Column",action:"delCol"}));
+                             addMenuNode(j++,subMenu, new MenuNode({group:12,title:"Delete Table",action:"delTable"}));
+                            
+                            addMenuNode(i++,menu,new MenuNode({icon:"icon-twitter",group:8,title:"Color",subMenu:new Array()}));
+                             j=0;subMenu=menu[i-1].subMenu;
+                             addMenuNode(j++,subMenu, new MenuNode({group:13,title:"Fore Color",action:"foreColor",trigger:"hover"}));
+                             addMenuNode(j++,subMenu, new MenuNode({group:13,title:"Back Color",action:"backColor",trigger:"hover"}));
                         }
                         var toolbarHtml = function(){
                             initMenu();
@@ -689,33 +734,31 @@
                             toolbar = toolbar || $(toolbarHtml());
                             return toolbar;
                         }
+                        var execElem = function(elem,e){
+                        	var actionKey = $(elem).attr("actionKey");
+                            hasFocus = true;
+                            elem.blur();
+                            bootstrapEditorFrame.focus();
+                            checkFocusBlurState(true);
+                            executeAction.apply(elem,[actionKey,$(elem),e]);
+                            return true;
+                        }
                         this.addToElem = function(elem)
                         {
                             elem.append(this.getToolbar());
-                            this.getToolbar().on("click","li:not(.divider,.divider-vertical,.dropdown)",function(event){
-                                var actionKey = $(this).attr("actionKey");
-                                hasFocus = true;
-                                this.blur();
-                                bootstrapEditorFrame.focus();
-                                checkFocusBlurState(true);
-                                executeAction(actionKey);
+                            this.getToolbar().on("click","li:not(.divider,.divider-vertical,.dropdown)",function(e){
+                                return execElem(this,e);
+                            }).on("hover","li[trigger='hover']:not(.divider,.divider-vertical,.dropdown)",function(e){
+                            	var actionKey = $(this).attr("actionKey");
+				            	executeAction.apply(this,[actionKey,$(this),e]);
                                 return true;
-                            });
-                            
-                            /*this.getToolbar().on("focus blur",function(){
-                                                              hasFocus = true;
-                                                              bootstrapEditorFrame.focus();
-                                                        });
-                            this.getToolbar().on("blur",function(){
-                                                              updateBootstrapToolbar(null);
-                                                        })*/
+				            });
                         }                          
                         
                      }
     
     var hasFocus = false;
     var lastFocus = false;
-    
     
     var changeFocus = function(){
     		if(lastFocus != hasFocus){
