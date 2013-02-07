@@ -105,67 +105,112 @@
                     cell.innerHTML = "&nbsp;";
                   }
                }
-               
             }
-			table.insTable = function(){
+
+            
+            table.insTable = function(){
                 
-                var body = '<form class="form-horizontal"><div class="control-group"><label class="control-label">No. of rows</label><div class="controls"><input type="text" id="row" placeholder="rows">' + 
-                			'</div></div><div class="control-group"><label class="control-label">No. of columns</label><div class="controls"><input type="text" id="column" placeholder="columns"></div></div>' +
-                			'<label class="control-label">Border</label><div class="controls"><input type="text" id="border" placeholder="columns"></div></form>';
-                var button = 'Insert', row = null, column = null;
-                var tableModal = getBootstrapModal("bootstrapTableModal",null,body,button, function(){
-                                   row = row || $('#row',tableModal);
-                                   column = column || $('#column',tableModal);
+                var body = '<form class="form-horizontal" style="height:300px">' + lblInp('No. of rows',['row','rows'],false) + 
+                            lblInp('No. of columns',['column','columns'],false) +
+                            lblInp('Cell Padding',['cellPadding','padding'],false) +
+                            lblInp('Border',getTableBorder('borderWidth','width','borderStyle',['solid','none','double','dotted','dashed'],'borderColor'),true) +
+                            '</form>';
+                var button = 'Insert', row = null, column = null, borderWidth = null, borderStyle = null, cellPadding=null, borderColor=null;
+                var tableModal = getBootstrapModal("bootstrapTableModal",{body:body,button:button, callback:function(){
+                                   var style = "border:" + (borderWidth.val() || "1") + "px " + borderStyle.attr("value") + " " + borderColor.css("background-color") + ";";
+                                   var padding = "padding:" + (cellPadding.val() || "1") + "px";
                                    if(parseInt($.trim(row.val()))<=0 || parseInt($.trim(column.val()))<=0)return;
-                                   var tableStr = "<table cellspacing=0 cellpadding=0 border=1 style='border-color: #ccc'>";
-                                   for(var i=0;i<parseInt($.trim(row.val()));i++)
-                                   {
+                                   var tableStr = "<table cellspacing=1 border=1 style='"+ style +"'>";
+                                   for(var i=0;i<parseInt($.trim(row.val()));i++){
                                        tableStr += "<tr>";
-                                       for(var j=0;j<parseInt($.trim(column.val()));j++)
-                                       {
-                                           tableStr += "<td>&nbsp;</td>";
+                                       for(var j=0;j<parseInt($.trim(column.val()));j++){
+                                           tableStr += "<td style='"+ style + padding +"'>&nbsp;</td>";
                                        }
                                        tableStr += "</tr>";
                                    }
                                    tableStr += "</table>";
                                    bootstrapEditorFrame.insertNode(tableStr);
-                                });
-                row = $('#row',tableModal);
-                column = $('#column',tableModal);
-                row.val("");
-                column.val("");
-                tableModal.modal('show');              
+                                   var a =  table.getTableProp();
+                                }, initialize: function(){
+                                    (borderStyle = $("#borderStyle",tableModal)).parent().on("click","li",function(){
+                                        repSelNode(this,true);  
+                                    });
+                                    borderColor = $("#borderColor",tableModal).on('click',function(){
+                                            var val = colorPicker.normalizeColor(borderColor.css("background-color")) || "#fff";
+                                            var tip = borderColor.data('popover') && borderColor.data('popover').tip();
+                                            if(!tip){
+                                            var tip = colorPicker.createColorPicker(borderColor,"Border Color","bottom","manual",function(color){
+                                            tip.hide();
+                                            borderColor.css("background-color",color);
+                                            });}
+                                            tip.toggle();
+                                            colorPicker.initColor(tip,val);
+                                    });
+                                }});
+                row = $('#row',tableModal).val("");
+                column = $('#column',tableModal).val("");
+                borderWidth = $("#borderWidth",tableModal).val("");
+                (borderStyle = borderStyle || $("#borderStyle",tableModal)).parent().find("li:first").each(function(){repSelNode(this,false);});
+                borderColor = $("#borderColor",tableModal).css("background-color","#000");
+                cellPadding = $("#cellPadding",tableModal).val("");
+                tableModal.modal('show');
             }
+            
+            var getTableBorder = function(widthId, widthLbl, styleId, styleArr, colorId){
+              var str = '<div class="input-append" style="float:left"><input type="text" id="'+widthId+'" placeholder="'+widthLbl+'" class="input-mini"><span class="add-on">px</span></div>';
+              str += '<div class="dropdown selectable" style="float:left;margin:0px 5px"><a id="'+styleId+'" role="button" class="btn dropdown-toggle" data-toggle="dropdown"></a>' +
+ 						  '<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">';
+ 			    for(var i=0;i<styleArr.length;i++)
+ 			    {
+ 			    	str += '<li><a tabindex="-1" href="#" value="'+styleArr[i]+'"><div style="height: 20px;"><div style="border-bottom-style:'+styleArr[i]+';height:10px"></div></div></a></li>'; 
+ 			    }
+              str += '</ul></div>';
+              str += "<div id='"+colorId+"' class='colorPickerDisplay' style='background-color:black;margin-top:8px;float:left'></div>";
+              return str; 
+            }
+
+            var lblInp = function(lbl,inp,custom){
+            	return '<div class="control-group"><label class="control-label">' + lbl + '</label><div class="controls">' + (custom?inp:('<input type="text" id="'+inp[0]+'" placeholder="'+inp[1]+'">')) + '</div></div>';
+            }
+            var repSelNode = function(elem,flag){
+            		var a = $(elem).children('a');
+					var b = $(elem).parent().siblings('a');
+					var width = (a.width() || a.children().width() || 114)/2;
+					var height = (a.height()/2) || (a.children().height()/2) || 8;
+					b.css("width",(width + 16) +"px")
+					b.html('<div  style="float: left;width:' + width + 'px">' + a.html() + '</div>' + ' <b class="caret" style="margin-left:4px;margin-top:'+height+'px"></b>' + '</div>');
+					b.attr("value",a.attr("value"));
+            }
+			
             var colorPicker = {};
             
             colorPicker.colorCodes = {"Standard Color":["000000","FFFFFF","EEECE1","1F497D","4F81BD","C0504D","9BBB59","8064A2","4BACC6","F79646","C00000","FF0000","FFC000","FFFF00",
-            						"92D050","00B050","00B0F0","0070C0","002060","7030A0"],"Other Color":[]}; 
-            colorPicker.createColorPicker = function(elem,title,placement,input,callback){
+            						"92D050","00B050","00B0F0","0070C0","002060","7030A0"],"Other Color":[]};
+            colorPicker.createColorPicker = function(elem,title,placement,trigger,callback){
             	var items=10;
-            	var contentStr = "<div>"
-            	if(input){
-            	contentStr += "<label class='colorPickerLabel'>"+title+"</label><div class='colorPickerControl'><input type='text' class='input-small colorPickerValue' /><div class='colorPickerDisplay colorPicker'></div></div>"
-            	}
+            	var contentStr = "<div>";
+            	contentStr += "<label class='colorPickerLabel'>"+title+"</label><div class='colorPickerControl'><input type='text' class='input-small colorPickerValue' /><div class='colorPickerDisplay colorPicker'></div></div>";
             	$.each(colorPicker.colorCodes, function(key, value) { 
-					if(value.length>0)
-					{
-						contentStr += "<h4>"+key+"</h4><table>";
-						for(var i=0;i<=((value.length/items) && value.length!=0);i++){
-							contentStr += "<tr>";
-							for(var j=(i*items);j<value.length && j<(i+1)*items;j++){
-								contentStr += "<td><div class='colorPickerDisplay' style='background-color:#"+value[j]+";'></div></td>";
-							}
-							contentStr += "</tr>";
-						}
-						contentStr += "</td></tr></table>"
-					}
-				});
+                        if(value.length>0)
+                        {
+                            contentStr += "<h4>"+key+"</h4><table>";
+                            for(var i=0;i<=((value.length/items) && value.length!=0);i++){
+                                contentStr += "<tr>";
+                                for(var j=(i*items);j<value.length && j<(i+1)*items;j++){
+                                    contentStr += "<td><div class='colorPickerDisplay' style='background-color:#"+value[j]+";'></div></td>";
+                                }
+                                contentStr += "</tr>";
+                            }
+                            contentStr += "</td></tr></table>"
+                        }
+                    });
 				contentStr += "</div>";
-				elem.popover({html:true,placement:placement,content:contentStr,trigger:"manual"});
+				elem.popover({html:true,placement:placement,content:contentStr,trigger:trigger});
 				elem.popover("show");
-				elem.data('popover').tip().on("click","div.colorPickerDisplay",function(){
+				return (elem.data('popover').tip()).on("click","div.colorPickerDisplay",function(){
 				 callback($(this).css("background-color"));
-				});
+				}).hide();
+				
             }
             colorPicker.hex = function(x) {
 					               return ("0" + parseInt(x).toString(16)).slice(-2);
@@ -180,40 +225,46 @@
 					          return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]); 
 					     }
 			}
-            
-            
+			colorPicker.initColor = function(tip,color){
+			    var colorPickerDiv = $(".colorPicker",tip);
+                var colorPickerValue = $(".colorPickerValue",tip);
+                colorPickerDiv.css("background-color",color);
+                colorPickerValue.val(color);
+                colorPickerValue.on("keyup",function(){
+                        colorPickerDiv.css("background-color",$(this).val());
+                }).on("click",function(e){
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+			}
             var changeColor = function(key,elem,e){
                var fore = actionMap[key].value;
-               var cmd = actionMap[key].command;
+               var cmd = actionMap[key].command || key;
                var obj = $(elem.find("a:first")[0]);
+               var tip = obj.data('popover') && obj.data('popover').tip();
                var val = colorPicker.normalizeColor(getCommandValue(cmd)) || (fore?"#000":"#fff");
-               if(!obj.data('popover')){
-	           colorPicker.createColorPicker(obj,elem.attr("title"),"right",true,function(color){
-						            obj.popover('hide');
+               if(!tip){
+	           tip = colorPicker.createColorPicker(obj,elem.attr("title"),"right","manual",function(color){
+						            tip.hide();
 						            bootstrapEditorFrame.focus();
 						            executeAction.apply(this,[key,elem,e,color]);
 						            });
-                } else{
-	            if(e.type==="click" || e.type==="mouseleave"){
-	              obj.popover("hide");
-	            }else if(e.type="mouseenter"){
-	                obj.popover("show");
-	            	}
-	            }
-	            var colorPickerDiv = $(".colorPicker",obj.data('popover').tip());
-	            var colorPickerValue = $(".colorPickerValue",obj.data('popover').tip());
-	            colorPickerDiv.css("background-color",val);
-	           	colorPickerValue.val(val);
-	            colorPickerValue.on("keyup",function(){
-	            		colorPickerDiv.css("background-color",$(this).val());
-	            });
-            }
+						            
+                } 
+	            if(e.type=="mouseleave"){
+	              tip.hide();
+	            }else if(e.type=="mouseenter"){
+	                tip.show();
+            	}
+	            colorPicker.initColor(tip,val);
+	        }
     
             var viewHtml = function(){
                 var body = '<form><fieldset><label>HTML Source Editor</label><textarea id="htmlSource" rows="15" style="width:100%"></textarea></fieldset></form>';
                 var button = 'Update';
                 var htmlSource = null;
-                var htmlModal = getBootstrapModal("bootstrapHtmlModal",null,body,button,function (){
+                var htmlModal = getBootstrapModal("bootstrapHtmlModal",{body:body,button:button,callback:function (){
                                    htmlSource = htmlSource || $('#htmlSource',htmlModal);
                                    var content = "";
                                    var tokens = $("<div>" + htmlSource.val() + "</div>").contents().each(function(){
@@ -223,7 +274,7 @@
                                                content += $(this).wrap("<div/>").parent().html();
                                    }});
                                    bootstrapEditorFrame.frameDoc.body.innerHTML = content;
-                });
+                }});
                 htmlSource = $('#htmlSource',htmlModal);
                 setTimeout(function(){
                                     htmlSource.val(bootstrapEditorFrame.frameDoc.body.innerHTML);
@@ -236,13 +287,12 @@
                 var button = 'Insert';
                 var imageUrl = null;
                 
-                var imageModal = getBootstrapModal("bootstrapImageModal",null,body,button,function (){
+                var imageModal = getBootstrapModal("bootstrapImageModal",{body:body,button:button,callback:function (){
                                    imageUrl = imageUrl || $('#imageUrl',imageModal);
                                    if($.trim(imageUrl.val()) === "") return;
                                    executeAction.apply(this,[key,elem,e,$.trim(imageUrl.val())]);
-                });
-                imageUrl = $('#imageUrl',imageModal);
-                imageUrl.val("http://");
+                }});
+                imageUrl = $('#imageUrl',imageModal).val("http://");
                 imageModal.modal('show');
             }
     
@@ -253,7 +303,7 @@
                 var button = 'Create';
                 var address = null;
                 var text = null;
-                var linkModal = getBootstrapModal("bootstrapLinkModal",null,body,button, function(){
+                var linkModal = getBootstrapModal("bootstrapLinkModal",{body:body,button:button, callback:function(){
                                    var valid = true;
                                    address = address || $('#address',linkModal);
                                    text = text || $('#text',linkModal);
@@ -261,11 +311,9 @@
                                    var textNode = bootstrapEditorFrame.frameDoc.createTextNode($.trim(text.val()))
                                    bootstrapEditorFrame.replaceText(textNode);
                                    executeAction.apply(this,[key,elem,e,$.trim(address.val())]);
-                                });
-                address = $('#address',linkModal);
-                text = $('#text',linkModal);
-                address.val("http://");
-                text.val(bootstrapEditorFrame.getText());              
+                                }});
+                address = $('#address',linkModal).val("http://");
+                text = $('#text',linkModal).val(bootstrapEditorFrame.getText());
                 linkModal.modal('show');
             }        
             var Action = function(context)
@@ -294,25 +342,25 @@
             	
             }
             
-            var getBootstrapModal = function(id,header,body,button,callback)
+            var getBootstrapModal = function(id,context)
             {
                 if(id in bootstrapModalMap)
                     return bootstrapModalMap[id];
                 var htmlStr = '<div id="'+id+'" class="modal hide fade" tabindex="-1">';
-                if(header){
+                if(context.header){
                 htmlStr += '<div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>'
-                htmlStr += '<h3>' + heading + '</h3></div>'; 
+                htmlStr += '<h3>' + context.header + '</h3></div>'; 
                 }
-                if(body){
+                if(context.body){
                 htmlStr += '<div class="modal-body">';
-                if(!header){ 
+                if(!context.header){ 
                     htmlStr += '<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>'; 
                 }
-                htmlStr += body + '</div>';
+                htmlStr += context.body + '</div>';
                 }
                 htmlStr += '<div class="modal-footer"><button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>'
-                if(button){
-                htmlStr += '<button class="btn btn-primary">'+button+'</button>';
+                if(context.button){
+                htmlStr += '<button class="btn btn-primary">'+context.button+'</button>';
                 }
                 htmlStr += '</div></div>';
                 bootstrapModalMap[id] = $(htmlStr).on("click","button",function(e){
@@ -321,14 +369,18 @@
                    bootstrapEditorFrame.focus();
                    checkFocusBlurState(true);
                    if($(this).hasClass('btn-primary')){
-                   			callback(); 
+                   			context.callback(); 
                    }
                 }).on("shown",function(){
                     hasFocus = true;
                     $("textarea:first,input:first",bootstrapModalMap[id]).focus();
-                });   
+                }).appendTo(bootstrapEditor);
+                
+                if(context.initialize) context.initialize();   
                 return bootstrapModalMap[id];
             }
+            
+            
 
             var initActionMap = function(){
                 
@@ -746,7 +798,7 @@
                         this.addToElem = function(elem)
                         {
                             elem.append(this.getToolbar());
-                            this.getToolbar().on("click","li:not(.divider,.divider-vertical,.dropdown)",function(e){
+                            this.getToolbar().on("click","li[trigger!='hover']:not(.divider,.divider-vertical,.dropdown)",function(e){
                                 return execElem(this,e);
                             }).on("hover","li[trigger='hover']:not(.divider,.divider-vertical,.dropdown)",function(e){
                             	var actionKey = $(this).attr("actionKey");
@@ -801,7 +853,7 @@
   	    }).on("blur",function(e){
   	        hasFocus = false;
             checkFocusBlurState(false);
-        });    
+        });
   	}   
   	}    
   	    	
